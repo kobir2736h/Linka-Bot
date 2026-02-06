@@ -3,14 +3,12 @@ const { readdirSync, readFileSync, writeFileSync, existsSync, unlinkSync, rm } =
 const { join, resolve } = require("path");
 const { execSync } = require('child_process');
 const logger = require("./utils/log.js");
-// login require বাদ দিয়েছি কারণ index.js লগইন করবে
 const axios = require("axios");
 const listPackage = JSON.parse(readFileSync('./package.json')).dependencies;
 const listbuiltinModules = require("module").builtinModules;
-const { Sequelize, sequelize } = require("./includes/database");
 
 // ====================================================
-// GLOBAL VARIABLES SETUP
+// 1. GLOBAL VARIABLES SETUP (সবার আগে এটা করতে হবে)
 // ====================================================
 
 global.whitelistUser = new Set();
@@ -62,7 +60,7 @@ global.moduleData = new Array();
 global.language = new Object();
 
 // ====================================================
-// LOAD CONFIGURATION
+// 2. LOAD CONFIGURATION (ডাটাবেস কল করার আগেই এটা করতে হবে)
 // ====================================================
 
 var configValue;
@@ -89,7 +87,12 @@ catch { logger.loader("Can't load file config!", "error") }
 writeFileSync(global.client.configPath + ".temp", JSON.stringify(global.config, null, 4), 'utf8');
 
 // ====================================================
-// LOAD LANGUAGE
+// 3. DATABASE IMPORT (কনফিগ লোড হওয়ার পরে এটা কল হচ্ছে)
+// ====================================================
+const { Sequelize, sequelize } = require("./includes/database");
+
+// ====================================================
+// 4. LOAD LANGUAGE
 // ====================================================
 
 const langFile = (readFileSync(`${__dirname}/languages/${global.config.language || "en"}.lang`, { encoding: 'utf-8' })).split(/\r?\n|\r/);
@@ -117,7 +120,7 @@ global.getText = function (...args) {
 }
 
 // ====================================================
-// [NEW] MAIN FUNCTION TO START BOT (Called by index.js)
+// 5. MAIN FUNCTION
 // ====================================================
 
 module.exports = async function startPriyansh(api, updateStatus) {
@@ -131,11 +134,11 @@ module.exports = async function startPriyansh(api, updateStatus) {
         const models = require('./includes/database/model')(authentication);
         logger(global.getText('priyansh', 'successConnectDatabase'), '[ DATABASE ]');
 
-        // ২. API সেটআপ (যা index.js থেকে এসেছে)
+        // ২. API সেটআপ
         global.client.api = api;
         api.setOptions(global.config.FCAOption);
 
-        // ৩. কমান্ড লোড করা
+        // ৩. কমান্ড লোড
         updateStatus(70, "Loading Commands...");
         const listCommand = readdirSync(global.client.mainPath + '/Priyansh/commands').filter(command => command.endsWith('.js') && !command.includes('example') && !global.config.commandDisabled.includes(command));
         
@@ -145,7 +148,7 @@ module.exports = async function startPriyansh(api, updateStatus) {
                 if (!module.config || !module.run || !module.config.commandCategory) throw new Error(global.getText('priyansh', 'errorFormat'));
                 if (global.client.commands.has(module.config.name || '')) throw new Error(global.getText('priyansh', 'nameExist'));
                 
-                // ডিপেন্ডেন্সি চেকিং এবং অটো ইন্সটল
+                // Dependencies Logic
                 if (module.config.dependencies && typeof module.config.dependencies == 'object') {
                     for (const reqDependencies in module.config.dependencies) {
                         const reqDependenciesPath = join(__dirname, 'nodemodules', 'node_modules', reqDependencies);
@@ -155,21 +158,10 @@ module.exports = async function startPriyansh(api, updateStatus) {
                                 else global.nodemodule[reqDependencies] = require(reqDependenciesPath);
                             }
                         } catch {
-                            var check = false;
-                            var isError;
-                            logger.loader(global.getText('priyansh', 'notFoundPackage', reqDependencies, module.config.name), 'warn');
-                            execSync('npm --package-lock false --save install ' + reqDependencies + (module.config.dependencies[reqDependencies] == '*' || module.config.dependencies[reqDependencies] == '' ? '' : '@' + module.config.dependencies[reqDependencies]), { 'stdio': 'inherit', 'env': process['env'], 'shell': true, 'cwd': join(__dirname, 'nodemodules') });
-                            for (let i = 1; i <= 3; i++) {
-                                try {
-                                    require['cache'] = {};
-                                    if (listPackage.hasOwnProperty(reqDependencies) || listbuiltinModules.includes(reqDependencies)) global['nodemodule'][reqDependencies] = require(reqDependencies);
-                                    else global['nodemodule'][reqDependencies] = require(reqDependenciesPath);
-                                    check = true;
-                                    break;
-                                } catch (error) { isError = error; }
-                                if (check || !isError) break;
-                            }
-                            if (!check || isError) throw global.getText('priyansh', 'cantInstallPackage', reqDependencies, module.config.name, isError);
+                            // Install Logic
+                            execSync('npm --package-lock false --save install ' + reqDependencies, { 'stdio': 'inherit', 'env': process['env'], 'shell': true, 'cwd': join(__dirname, 'nodemodules') });
+                            require['cache'] = {};
+                            global['nodemodule'][reqDependencies] = require(reqDependencies);
                         }
                     }
                     logger.loader(global.getText('priyansh', 'loadedPackage', module.config.name));
@@ -207,7 +199,7 @@ module.exports = async function startPriyansh(api, updateStatus) {
             };
         }
 
-        // ৪. ইভেন্ট লোড করা
+        // ৪. ইভেন্ট লোড
         updateStatus(80, "Loading Events...");
         const events = readdirSync(global.client.mainPath + '/Priyansh/events').filter(event => event.endsWith('.js') && !global.config.eventDisabled.includes(event));
         for (const ev of events) {
@@ -215,13 +207,6 @@ module.exports = async function startPriyansh(api, updateStatus) {
                 var event = require(global.client.mainPath + '/Priyansh/events/' + ev);
                 if (!event.config || !event.run) throw new Error(global.getText('priyansh', 'errorFormat'));
                 if (global.client.events.has(event.config.name) || '') throw new Error(global.getText('priyansh', 'nameExist'));
-                
-                // ইভেন্ট ডিপেন্ডেন্সি (সংক্ষিপ্ত করা হয়েছে)
-                if (event.config.dependencies && typeof event.config.dependencies == 'object') {
-                    for (const dependency in event.config.dependencies) {
-                         // (Same logic as commands...)
-                    }
-                }
                 
                 if (event.onLoad) try {
                     const eventData = { api: api, models: models };
@@ -252,7 +237,6 @@ module.exports = async function startPriyansh(api, updateStatus) {
         
         global.handleListen = api.listenMqtt(listenerCallback);
         
-        // ৬. কাজ শেষ
         updateStatus(100, "Bot is Active & Running!");
 
         try {
