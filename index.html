@@ -92,11 +92,19 @@
             animation: pop 0.5s ease;
         }
         @keyframes pop { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+        
+        /* Loader for initial check */
+        .loading-overlay {
+            display: none; /* Initially hidden */
+            font-size: 14px;
+            color: #8b949e;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
+    <!-- Login Section -->
     <div id="loginSection">
         <h2>🤖 Bot Control Panel</h2>
         <p style="font-size: 13px; color: #8b949e;">Paste your AppState JSON below to start</p>
@@ -104,6 +112,7 @@
         <button class="btn-start" onclick="startBot()">🚀 Start Bot</button>
     </div>
 
+    <!-- Monitor/Success Section -->
     <div id="monitorSection" style="display: none;">
         <div class="success-icon" id="successIcon">✔</div>
         <h3 id="mainStatus">Initializing...</h3>
@@ -120,30 +129,37 @@
 <script>
     let intervalId = null;
 
+    // ১. পেজ লোড হওয়ার সাথে সাথেই চেক করবে বট রানিং কিনা
+    window.onload = function() {
+        checkStatus(); 
+        // প্রতি ২ সেকেন্ড পর পর চেক করতেই থাকবে
+        intervalId = setInterval(checkStatus, 2000);
+    };
+
     async function startBot() {
         const appState = document.getElementById('appState').value;
         if (!appState) return alert("Please paste AppState JSON first!");
 
         try {
-            JSON.parse(appState); // Check if valid JSON
+            JSON.parse(appState); 
         } catch (e) {
             return alert("Invalid JSON format! Please copy cookies correctly.");
         }
 
-        // Switch UI
+        // UI চেঞ্জ করে দেওয়া
         document.getElementById('loginSection').style.display = 'none';
         document.getElementById('monitorSection').style.display = 'block';
         document.getElementById('progressContainer').style.display = 'block';
 
-        // Send Data
+        // ডাটা পাঠানো
         await fetch('/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ appState: appState })
         });
-
-        // Start checking status
-        intervalId = setInterval(checkStatus, 1000);
+        
+        // এখন দ্রুত চেক করা শুরু করো
+        checkStatus();
     }
 
     async function checkStatus() {
@@ -154,39 +170,66 @@
             const progressBar = document.getElementById('progressBar');
             const statusMsg = document.getElementById('statusMsg');
             const mainStatus = document.getElementById('mainStatus');
+            const loginSection = document.getElementById('loginSection');
+            const monitorSection = document.getElementById('monitorSection');
 
-            // Update UI
-            progressBar.style.width = data.percent + '%';
-            statusMsg.innerText = data.message;
-            
-            if (data.percent < 100) {
-                mainStatus.innerText = `Loading... ${data.percent}%`;
-            }
-
+            // যদি বট ১০০% রানিং থাকে
             if (data.percent === 100) {
-                clearInterval(intervalId);
+                // লগইন পেজ লুকাও, সাকসেস পেজ দেখাও
+                if (loginSection.style.display !== 'none') {
+                    loginSection.style.display = 'none';
+                    monitorSection.style.display = 'block';
+                }
+
                 mainStatus.innerText = "Bot is Active!";
                 mainStatus.style.color = "#238636";
+                statusMsg.innerText = data.message;
+                
                 document.getElementById('successIcon').style.display = 'block';
-                document.getElementById('progressContainer').style.display = 'none';
+                document.getElementById('progressContainer').style.display = 'none'; // বার দরকার নেই আর
                 document.getElementById('resetBtn').style.display = 'block';
-            } 
+            }
+            // যদি বট লোডিং অবস্থায় থাকে (০ এর বেশি কিন্তু ১০০ এর কম)
+            else if (data.percent > 0 && data.percent < 100) {
+                loginSection.style.display = 'none';
+                monitorSection.style.display = 'block';
+                document.getElementById('progressContainer').style.display = 'block';
+                
+                progressBar.style.width = data.percent + '%';
+                statusMsg.innerText = data.message;
+                mainStatus.innerText = `Starting... ${data.percent}%`;
+            }
+            // যদি বট বন্ধ থাকে বা এরর খায়
             else if (data.percent === 0 && data.message.includes("Failed")) {
-                clearInterval(intervalId);
+                loginSection.style.display = 'none';
+                monitorSection.style.display = 'block';
                 mainStatus.innerText = "Login Failed!";
                 mainStatus.style.color = "#da3633";
+                statusMsg.innerText = data.message;
                 document.getElementById('resetBtn').style.display = 'block';
+            }
+            // যদি বট একদমই চালু না থাকে (Waiting...)
+            else if (data.percent === 0) {
+                // তাহলে লগইন পেজটাই দেখাও
+                monitorSection.style.display = 'none';
+                loginSection.style.display = 'block';
             }
 
         } catch (error) {
-            console.error("Connection error");
+            console.error("Connection error, server might be sleeping.");
         }
     }
 
     async function resetBot() {
         if (!confirm("Are you sure you want to stop the bot?")) return;
+        
+        // সার্ভারে থামানোর রিকোয়েস্ট
         await fetch('/reset', { method: 'POST' });
-        location.reload();
+        
+        // পেজ রিলোড দাও যাতে আবার লগইন ফর্ম আসে
+        setTimeout(() => {
+            location.reload();
+        }, 1000);
     }
 </script>
 
