@@ -3,107 +3,192 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Priyansh Bot Panel</title>
+    <title>Bot Dashboard</title>
     <style>
-        body { background: #0f0f0f; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .box { background: #1e1e1e; padding: 40px; border-radius: 10px; width: 400px; text-align: center; box-shadow: 0 0 20px rgba(0,255,100,0.1); }
-        h2 { color: #00ff88; margin-bottom: 20px; }
-        textarea { width: 100%; height: 150px; background: #2b2b2b; border: 1px solid #444; color: #00ff88; padding: 10px; border-radius: 5px; margin-bottom: 15px; outline: none; }
-        button { background: #00ff88; color: #000; border: none; padding: 12px 25px; border-radius: 5px; font-weight: bold; cursor: pointer; width: 100%; transition: 0.3s; }
-        button:hover { background: #00cc6a; }
+        body {
+            background-color: #0d1117;
+            color: #c9d1d9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: #161b22;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            width: 450px;
+            text-align: center;
+            border: 1px solid #30363d;
+        }
+        h2 { color: #58a6ff; margin-bottom: 20px; }
         
-        .progress-box { display: none; margin-top: 20px; }
-        .bar-bg { background: #333; height: 20px; border-radius: 10px; overflow: hidden; margin-bottom: 10px; }
-        .bar-fill { background: #00ff88; height: 100%; width: 0%; transition: width 0.4s; }
+        /* Input Area */
+        textarea {
+            width: 100%;
+            height: 150px;
+            background-color: #0d1117;
+            border: 1px solid #30363d;
+            color: #c9d1d9;
+            border-radius: 6px;
+            padding: 10px;
+            box-sizing: border-box;
+            resize: none;
+            font-size: 12px;
+            font-family: monospace;
+        }
+        textarea:focus { outline: 1px solid #58a6ff; }
+
+        /* Buttons */
+        button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 15px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-start { background-color: #238636; color: white; }
+        .btn-start:hover { background-color: #2ea043; }
         
-        .success-box { display: none; animation: pop 0.5s; }
-        .success-icon { font-size: 60px; color: #00ff88; margin-bottom: 10px; }
-        
-        .hidden { display: none !important; }
-        @keyframes pop { from {transform: scale(0.8); opacity: 0;} to {transform: scale(1); opacity: 1;} }
+        .btn-reset { background-color: #da3633; color: white; margin-top: 10px; display: none;}
+        .btn-reset:hover { background-color: #f85149; }
+
+        /* Progress Bar */
+        .progress-container {
+            margin-top: 20px;
+            background-color: #30363d;
+            border-radius: 10px;
+            height: 20px;
+            width: 100%;
+            overflow: hidden;
+            display: none;
+        }
+        .progress-bar {
+            background-color: #58a6ff;
+            height: 100%;
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+        .status-text {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #8b949e;
+            min-height: 20px;
+        }
+
+        /* Success Animation */
+        .success-icon {
+            font-size: 50px;
+            color: #238636;
+            display: none;
+            margin-bottom: 10px;
+            animation: pop 0.5s ease;
+        }
+        @keyframes pop { 0% { transform: scale(0); } 100% { transform: scale(1); } }
     </style>
 </head>
 <body>
 
-    <div class="box">
-        <h2>🤖 BOT CONTROL</h2>
-
-        <!-- ১. লগইন ফর্ম -->
-        <div id="loginForm">
-            <p style="color:#aaa; font-size:14px;">Paste AppState JSON below:</p>
-            <textarea id="cookies" placeholder='[{"key": "c_user", "value": "..."}]'></textarea>
-            <button onclick="startBot()">START BOT</button>
-        </div>
-
-        <!-- ২. প্রোগ্রেস বার -->
-        <div id="progressArea" class="progress-box">
-            <p id="statusMsg" style="font-size: 14px; color: #ccc;">Starting...</p>
-            <div class="bar-bg">
-                <div id="bar" class="bar-fill"></div>
-            </div>
-            <p id="percentText">0%</p>
-        </div>
-
-        <!-- ৩. সাকসেস স্ক্রিন -->
-        <div id="successArea" class="success-box">
-            <div class="success-icon">✔</div>
-            <h3>Bot Running!</h3>
-            <p>System is fully active.</p>
-            <button onclick="resetBot()" style="background: #ff4444; color: white; margin-top: 15px;">Use New Cookies</button>
-        </div>
+<div class="container">
+    <div id="loginSection">
+        <h2>🤖 Bot Control Panel</h2>
+        <p style="font-size: 13px; color: #8b949e;">Paste your AppState JSON below to start</p>
+        <textarea id="appState" placeholder='[{"key": "c_user", "value": "..."}]'></textarea>
+        <button class="btn-start" onclick="startBot()">🚀 Start Bot</button>
     </div>
 
-    <script>
-        let interval = null;
+    <div id="monitorSection" style="display: none;">
+        <div class="success-icon" id="successIcon">✔</div>
+        <h3 id="mainStatus">Initializing...</h3>
+        
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        
+        <p class="status-text" id="statusMsg">Connecting to server...</p>
+        <button class="btn-reset" id="resetBtn" onclick="resetBot()">Stop & New Login</button>
+    </div>
+</div>
 
-        async function startBot() {
-            const cookies = document.getElementById('cookies').value;
-            if (!cookies) return alert("Please paste cookies first!");
+<script>
+    let intervalId = null;
 
-            // UI চেঞ্জ
-            document.getElementById('loginForm').classList.add('hidden');
-            document.getElementById('progressArea').style.display = 'block';
+    async function startBot() {
+        const appState = document.getElementById('appState').value;
+        if (!appState) return alert("Please paste AppState JSON first!");
 
-            // সার্ভারে রিকোয়েস্ট পাঠানো
-            await fetch('/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ appState: cookies })
-            });
-
-            // স্ট্যাটাস চেক শুরু
-            interval = setInterval(checkStatus, 1000);
+        try {
+            JSON.parse(appState); // Check if valid JSON
+        } catch (e) {
+            return alert("Invalid JSON format! Please copy cookies correctly.");
         }
 
-        async function checkStatus() {
-            const res = await fetch('/status');
-            const data = await res.json();
+        // Switch UI
+        document.getElementById('loginSection').style.display = 'none';
+        document.getElementById('monitorSection').style.display = 'block';
+        document.getElementById('progressContainer').style.display = 'block';
 
-            document.getElementById('bar').style.width = data.percent + '%';
-            document.getElementById('percentText').innerText = data.percent + '%';
-            document.getElementById('statusMsg').innerText = data.message;
+        // Send Data
+        await fetch('/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ appState: appState })
+        });
+
+        // Start checking status
+        intervalId = setInterval(checkStatus, 1000);
+    }
+
+    async function checkStatus() {
+        try {
+            const response = await fetch('/status');
+            const data = await response.json();
+
+            const progressBar = document.getElementById('progressBar');
+            const statusMsg = document.getElementById('statusMsg');
+            const mainStatus = document.getElementById('mainStatus');
+
+            // Update UI
+            progressBar.style.width = data.percent + '%';
+            statusMsg.innerText = data.message;
+            
+            if (data.percent < 100) {
+                mainStatus.innerText = `Loading... ${data.percent}%`;
+            }
 
             if (data.percent === 100) {
-                clearInterval(interval);
-                setTimeout(() => {
-                    document.getElementById('progressArea').style.display = 'none';
-                    document.getElementById('successArea').style.display = 'block';
-                }, 1000);
+                clearInterval(intervalId);
+                mainStatus.innerText = "Bot is Active!";
+                mainStatus.style.color = "#238636";
+                document.getElementById('successIcon').style.display = 'block';
+                document.getElementById('progressContainer').style.display = 'none';
+                document.getElementById('resetBtn').style.display = 'block';
+            } 
+            else if (data.percent === 0 && data.message.includes("Failed")) {
+                clearInterval(intervalId);
+                mainStatus.innerText = "Login Failed!";
+                mainStatus.style.color = "#da3633";
+                document.getElementById('resetBtn').style.display = 'block';
             }
-            // যদি ফেইল করে (০% হয়ে যায় এরর সহ)
-            else if (data.percent === 0 && data.message.includes('Failed')) {
-                clearInterval(interval);
-                alert(data.message);
-                location.reload();
-            }
-        }
 
-        async function resetBot() {
-            if(confirm("Are you sure you want to stop the bot and enter new cookies?")) {
-                await fetch('/reset', { method: 'POST' });
-                location.reload();
-            }
+        } catch (error) {
+            console.error("Connection error");
         }
-    </script>
+    }
+
+    async function resetBot() {
+        if (!confirm("Are you sure you want to stop the bot?")) return;
+        await fetch('/reset', { method: 'POST' });
+        location.reload();
+    }
+</script>
+
 </body>
 </html>
