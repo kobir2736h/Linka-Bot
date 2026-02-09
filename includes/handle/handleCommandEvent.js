@@ -2,7 +2,8 @@ const fs = require("fs");
 const path = require("path");
 const freezePath = path.join(__dirname, "..", "..", "freeze.lock");
 
-module.exports = function ({ api, models, Users, Threads, Currencies }) {
+// [MODIFIED] models, Users, Threads, Currencies বাদ দেওয়া হয়েছে
+module.exports = function ({ api }) {
     const logger = require("../../utils/log.js");
     return function ({ event }) {
         if (fs.existsSync(freezePath)) {
@@ -16,6 +17,7 @@ module.exports = function ({ api, models, Users, Threads, Currencies }) {
         senderID = String(senderID);
         threadID = String(threadID);
         if ((allowInbox == false && senderID == threadID)) return;
+        
         for (const eventReg of eventRegistered) {
             const cmd = commands.get(eventReg);
             var getText2;
@@ -40,10 +42,7 @@ module.exports = function ({ api, models, Users, Threads, Currencies }) {
                 const Obj = {};
                 Obj.event = event;
                 Obj.api = api;
-                Obj.models = models;
-                Obj.Users = Users;
-                Obj.Threads = Threads;
-                Obj.Currencies = Currencies;
+                // [MODIFIED] models, Users, Threads, Currencies বাদ
                 Obj.getText = getText2;
                 if (cmd) cmd.handleEvent(Obj);
             } catch (error) {
