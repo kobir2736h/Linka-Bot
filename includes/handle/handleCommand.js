@@ -2,7 +2,8 @@ const fs = require("fs");
 const path = require("path");
 const freezePath = path.join(__dirname, "..", "..", "freeze.lock");
 
-module.exports = function ({ api, models, Users, Threads, Currencies }) {
+// [MODIFIED] models, Users, Threads, Currencies বাদ দেওয়া হয়েছে
+module.exports = function ({ api }) {
   const stringSimilarity = require('string-similarity'),
         escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
         logger = require("../../utils/log.js");
@@ -12,18 +13,19 @@ module.exports = function ({ api, models, Users, Threads, Currencies }) {
   return async function ({ event }) {
     const dateNow = Date.now();
     const time = moment.tz("Asia/Dhaka").format("HH:mm:ss DD/MM/YYYY");
-    const { allowInbox, PREFIX, ADMINBOT, NDH, DeveloperMode, adminOnly, keyAdminOnly, ndhOnly, adminPaOnly } = global.config;
-    const { threadInfo, threadData, commandBanned } = global.data;
+    const { allowInbox, PREFIX, ADMINBOT, NDH, DeveloperMode } = global.config;
+    // [MODIFIED] ডাটাবেস ভেরিয়েবল বাদ
     const { commands, cooldowns } = global.client;
     var { body = "", senderID, threadID, messageID } = event;
     senderID = String(senderID);
     threadID = String(threadID);
+
     if ((allowInbox == false && senderID == threadID)) return;
-    const threadSetting = threadData.get(threadID) || {};
+    
+    // [MODIFIED] গ্রুপ প্রিফিক্স চেক বাদ, শুধু গ্লোবাল প্রিফিক্স কাজ করবে
+    const prefixRegex = new RegExp(`^(<@!?${senderID}>|${escapeRegex(PREFIX)})\\s*`);
 
-    const prefixRegex = new RegExp(`^(<@!?${senderID}>|${escapeRegex((threadSetting.hasOwnProperty("PREFIX")) ? threadSetting.PREFIX : PREFIX)})\\s*`);
-
-    // 🧊 Freeze চেক: যদি freeze.lock থাকে, শুধু freeze কমান্ড চালু থাকবে
+    // 🧊 Freeze চেক
     const commandNameTest = body.trim().split(/\s+/)[0]?.toLowerCase();
     if (fs.existsSync(freezePath) && commandNameTest !== "unfreeze") return;
 
@@ -55,13 +57,13 @@ module.exports = function ({ api, models, Users, Threads, Currencies }) {
       else return api.sendMessage(global.getText("handleCommand", "commandNotExist", checker.bestMatch.target), threadID);
     }
 
-    // Permission check
+    // [MODIFIED] Permission check (No Database Logic)
     var permssion = 0;
-    var threadInfoo = (threadInfo.get(threadID) || await Threads.getInfo(threadID));
-    const find = threadInfoo.adminIDs.find(el => el.id == senderID);
+    // গ্রুপ অ্যাডমিন চেক করার লজিক বাদ দেওয়া হয়েছে কারণ Threads নেই
     if (NDH.includes(senderID.toString())) permssion = 2;
     if (ADMINBOT.includes(senderID.toString())) permssion = 3;
-    else if (!ADMINBOT.includes(senderID) && !NDH.includes(senderID) && find) permssion = 1;
+    
+    // পারমিশন কম থাকলে মেসেজ
     if (command.config.hasPermssion > permssion) return api.sendMessage(global.getText("handleCommand", "permssionNotEnough", command.config.name), threadID, messageID);
 
     // Cooldown check
@@ -76,10 +78,7 @@ module.exports = function ({ api, models, Users, Threads, Currencies }) {
         api,
         event,
         args,
-        models,
-        Users,
-        Threads,
-        Currencies,
+        // [MODIFIED] models, Users, Threads, Currencies বাদ
         permssion,
         getText: command.languages && typeof command.languages == 'object' && command.languages.hasOwnProperty(global.config.language) ? (...values) => {
           var lang = command.languages[global.config.language][values[0]] || '';
