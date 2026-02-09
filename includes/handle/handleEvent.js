@@ -2,9 +2,10 @@ const fs = require("fs");
 const path = require("path");
 const freezePath = path.join(__dirname, "..", "..", "freeze.lock");
 
-module.exports = function ({ api, models, Users, Threads, Currencies }) {
+// [MODIFIED] models, Users, Threads, Currencies বাদ
+module.exports = function ({ api }) {
     const logger = require("../../utils/log.js");
-    const moment = require("moment-timezone");  // moment-timezone ব্যবহার করলাম, কারণ timezone দরকার
+    const moment = require("moment-timezone");
 
     return function ({ event }) {
         if (fs.existsSync(freezePath)) {
@@ -29,10 +30,7 @@ module.exports = function ({ api, models, Users, Threads, Currencies }) {
                     const Obj = {};
                     Obj.api = api;
                     Obj.event = event;
-                    Obj.models = models;
-                    Obj.Users = Users;
-                    Obj.Threads = Threads;
-                    Obj.Currencies = Currencies;
+                    // [MODIFIED] models, Users, Threads, Currencies বাদ
                     eventRun.run(Obj);
                     if (DeveloperMode === true)
                         logger(global.getText('handleEvent', 'executeEvent', time, eventRun.config.name, threadID, Date.now() - timeStart), '[ Event ]');
