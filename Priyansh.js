@@ -8,7 +8,7 @@ const listPackage = JSON.parse(readFileSync('./package.json')).dependencies;
 const listbuiltinModules = require("module").builtinModules;
 
 // ====================================================
-// 1. GLOBAL VARIABLES SETUP (সবার আগে এটা করতে হবে)
+// 1. GLOBAL VARIABLES SETUP
 // ====================================================
 
 global.whitelistUser = new Set();
@@ -60,7 +60,7 @@ global.moduleData = new Array();
 global.language = new Object();
 
 // ====================================================
-// 2. LOAD CONFIGURATION (ডাটাবেস কল করার আগেই এটা করতে হবে)
+// 2. LOAD CONFIGURATION
 // ====================================================
 
 var configValue;
@@ -87,12 +87,7 @@ catch { logger.loader("Can't load file config!", "error") }
 writeFileSync(global.client.configPath + ".temp", JSON.stringify(global.config, null, 4), 'utf8');
 
 // ====================================================
-// 3. DATABASE IMPORT (কনফিগ লোড হওয়ার পরে এটা কল হচ্ছে)
-// ====================================================
-const { Sequelize, sequelize } = require("./includes/database");
-
-// ====================================================
-// 4. LOAD LANGUAGE
+// 3. LOAD LANGUAGE
 // ====================================================
 
 const langFile = (readFileSync(`${__dirname}/languages/${global.config.language || "en"}.lang`, { encoding: 'utf-8' })).split(/\r?\n|\r/);
@@ -120,25 +115,18 @@ global.getText = function (...args) {
 }
 
 // ====================================================
-// 5. MAIN FUNCTION
+// 4. MAIN FUNCTION (NO DATABASE CODE HERE)
 // ====================================================
 
 module.exports = async function startPriyansh(api, updateStatus) {
     try {
-        // ১. ডাটাবেস কানেকশন
-        updateStatus(60, "Connecting to Database...");
-        await sequelize.authenticate();
-        const authentication = {};
-        authentication.Sequelize = Sequelize;
-        authentication.sequelize = sequelize;
-        const models = require('./includes/database/model')(authentication);
-        logger(global.getText('priyansh', 'successConnectDatabase'), '[ DATABASE ]');
+        // [DATABASE REMOVED] - ডাটাবেস রিকোয়ারমেন্ট সব বাদ দেওয়া হয়েছে
 
-        // ২. API সেটআপ
+        // ১. API সেটআপ
         global.client.api = api;
         api.setOptions(global.config.FCAOption);
 
-        // ৩. কমান্ড লোড
+        // ২. কমান্ড লোড
         updateStatus(70, "Loading Commands...");
         const listCommand = readdirSync(global.client.mainPath + '/Priyansh/commands').filter(command => command.endsWith('.js') && !command.includes('example') && !global.config.commandDisabled.includes(command));
         
@@ -184,7 +172,8 @@ module.exports = async function startPriyansh(api, updateStatus) {
 
                 if (module.onLoad) {
                     try {
-                        const moduleData = { api: api, models: models };
+                        // [MODIFIED] models পাঠানো বাদ
+                        const moduleData = { api: api };
                         module.onLoad(moduleData);
                     } catch (_0x20fd5f) {
                         throw new Error(global.getText('priyansh', 'cantOnload', module.config.name, JSON.stringify(_0x20fd5f)), 'error');
@@ -199,7 +188,7 @@ module.exports = async function startPriyansh(api, updateStatus) {
             };
         }
 
-        // ৪. ইভেন্ট লোড
+        // ৩. ইভেন্ট লোড
         updateStatus(80, "Loading Events...");
         const events = readdirSync(global.client.mainPath + '/Priyansh/events').filter(event => event.endsWith('.js') && !global.config.eventDisabled.includes(event));
         for (const ev of events) {
@@ -209,7 +198,8 @@ module.exports = async function startPriyansh(api, updateStatus) {
                 if (global.client.events.has(event.config.name) || '') throw new Error(global.getText('priyansh', 'nameExist'));
                 
                 if (event.onLoad) try {
-                    const eventData = { api: api, models: models };
+                    // [MODIFIED] models পাঠানো বাদ
+                    const eventData = { api: api };
                     event.onLoad(eventData);
                 } catch (error) {
                     throw new Error(global.getText('priyansh', 'cantOnload', event.config.name, JSON.stringify(error)), 'error');
@@ -223,9 +213,11 @@ module.exports = async function startPriyansh(api, updateStatus) {
 
         logger.loader(global.getText('priyansh', 'finishLoadModule', global.client.commands.size, global.client.events.size));
         
-        // ৫. লিসেনার চালু করা
+        // ৪. লিসেনার চালু করা
         updateStatus(90, "Starting Listener...");
-        const listenerData = { api: api, models: models };
+        
+        // [MODIFIED] models পাঠানো বাদ
+        const listenerData = { api: api }; 
         const listener = require('./includes/listen')(listenerData);
 
         function listenerCallback(error, message) {
@@ -239,7 +231,6 @@ module.exports = async function startPriyansh(api, updateStatus) {
         
         updateStatus(100, "Bot is Active & Running!");
 
-        
     } catch (error) {
         updateStatus(0, "System Error: " + error.message);
         logger("Error in Priyansh.js: " + error, 'error');
