@@ -239,11 +239,7 @@ module.exports = async function startPriyansh(api, updateStatus) {
         
         updateStatus(100, "Bot is Active & Running!");
 
-        try {
-            await checkBan(api);
-        } catch (error) {};
-        if (!global.checkBan) logger(global.getText('priyansh', 'warningSourceCode'), '[ GLOBAL BAN ]');
-
+        
     } catch (error) {
         updateStatus(0, "System Error: " + error.message);
         logger("Error in Priyansh.js: " + error, 'error');
