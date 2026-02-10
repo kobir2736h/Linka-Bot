@@ -6,7 +6,7 @@
 	"MainName": "[ FCA-PRIYANSH ]",
 	"Uptime": false,
 	"Config": "default",
-	"DevMode": false,
+	"DevMode": true,
 	"Login2Fa": false,
 	"AutoLogin": false,
 	"BroadCast": true,
