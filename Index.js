@@ -1,6 +1,6 @@
 const express = require('express');
 const path = require('path');
-const login = require("fca-priyansh"); 
+const login = require("unofficial-fb-chat-api"); 
 const { writeFileSync, unlinkSync, existsSync } = require("fs");
 const logger = require("./utils/log");
 
