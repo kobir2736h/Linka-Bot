@@ -16,16 +16,8 @@
       "type": "git",
       "url": "https://github.com/Priyansh-11/Priyansh-bot/issues"
   },
-  "keywords": [
-      "bot",
-      "facebook",
-      "projectpriyansh",
-      "messenger",
-      "javasvript",
-      "priyanshu",
-      "prince",
-      "mental"
-  ],
+
+  
   "author": "𝐏𝐫𝐢𝐲𝐚𝐧𝐬𝐡 𝐑𝐚𝐣𝐩𝐮𝐭",
   "license": "GPL-3.0",
   "bugs": {
@@ -46,7 +38,7 @@
       "cron": "^2.1.0",
       "eval": "^0.1.8",
       "express": "^4.19.2",
-      "fca-priyansh": "^18.0.0",
+      "fca-priyansh": "^20.0.0",
       "form-data": "^4.0.0",
       "fs-extra": "^10.1.0",
       "googlethis": "^1.2.9",
@@ -65,7 +57,6 @@
       "priyansh-fb-downloader": "^2.0.0",
       "priyansh-ig-downloader": "^2.0.2",
       "pastebin-api": "^4.0.1",
-      "priyanshu-fca": "^1.0.0",
       "puppeteer": "^22.7.0",
       "random-cat-img": "^1.0.4",
       "request": "^2.88.2",
